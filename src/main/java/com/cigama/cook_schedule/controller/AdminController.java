@@ -14,6 +14,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -130,5 +131,18 @@ public class AdminController {
         userScheduleRepository.deleteAll();
         simpMessagingTemplate.convertAndSend("/topic/roster", "UPDATED");
         return "redirect:/admin?clearAllSuccess";
+    }
+
+    @PostMapping("/users/delete")
+    public String deleteUser(@RequestParam String userId, Principal principal) {
+        if (principal.getName().equals(userId)) {
+            return "redirect:/admin?error=selfDelete";
+        }
+        
+        userAccountRepository.deleteById(userId);
+        userScheduleRepository.deleteById(userId);
+        
+        simpMessagingTemplate.convertAndSend("/topic/roster", "UPDATED");
+        return "redirect:/admin?deleteSuccess=" + userId;
     }
 }
