@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông tin cá nhân</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav>
+        <a sec:authorize="hasAnyRole('ADMIN', 'USER')" th:href="@{/schedule}">Đăng ký lịch</a>
+        <a th:href="@{/roster}">Lịch phân công</a>
+        <a sec:authorize="hasAnyRole('ADMIN', 'USER')" th:href="@{/user/profile}">Thông tin cá nhân</a>
+        <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin}">Quản trị</a>
+        <form class="logout-form" th:action="@{/logout}" method="post">
+            <button type="submit">Đăng xuất</button>
+        </form>
+    </nav>
+
+    <div class="container">
+        <h1>Thông tin cá nhân</h1>
+
+        <div th:if="${param.success}" class="glass"
+            style="padding: 1rem; border-color: rgba(34, 197, 94, 0.3); margin-bottom: 2rem; border-radius: 0.5rem; background: rgba(34, 197, 94, 0.1);">
+            <p style="color: #4ade80; margin: 0; font-weight: 600;">Cập nhật thành công!</p>
+        </div>
+
+        <form th:action="@{/user/update-profile}" method="post" class="glass card"
+            style="max-width: 500px; margin: 0 auto;">
+            <div style="margin-bottom: 1.5rem;">
+                <label
+                    style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Username</label>
+                <div class="glass"
+                    style="padding: 0.75rem; border-radius: 0.5rem; background: rgba(255, 255, 255, 0.05);">
+                    <span th:text="${user.userId}" style="font-weight: 600; color: var(--accent-blue);"></span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label
+                    style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Tên
+                    hiển thị</label>
+                <input type="text" name="displayName" th:value="${user.displayName}" required placeholder="Họ và tên"
+                    style="margin-bottom: 0;" />
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <label
+                    style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Mật
+                    khẩu mới (để trống nếu không đổi)</label>
+                <input type="password" name="newPassword" placeholder="••••••••" style="margin-bottom: 0;" />
+            </div>
+
+            <button type="submit" style="width: 100%;">Lưu thay đổi</button>
+        </form>
+    </div>
+</body>
+
+</html>

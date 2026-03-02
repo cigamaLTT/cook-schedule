@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ sơ người dùng</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav>
+        <a sec:authorize="hasAnyRole('ADMIN', 'USER')" th:href="@{/schedule}">Đăng ký lịch</a>
+        <a th:href="@{/roster}">Lịch phân công</a>
+        <a sec:authorize="hasAnyRole('ADMIN', 'USER')" th:href="@{/user/profile}">Thông tin cá nhân</a>
+        <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin}">Quản trị</a>
+        <form class="logout-form" th:action="@{/logout}" method="post">
+            <button type="submit">Đăng xuất</button>
+        </form>
+    </nav>
+
+    <div class="container">
+        <div class="glass card profile-header" style="text-align: center;">
+            <div
+                style="width: 80px; height: 80px; background: var(--accent-blue); border-radius: 50%; margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #0f172a; font-weight: 700;">
+                <span th:text="${#strings.substring(targetUser.displayName, 0, 1)}"></span>
+            </div>
+            <h1 style="margin-bottom: 0.5rem; background: none; -webkit-text-fill-color: initial; color: white;">
+                <span th:text="${targetUser.displayName}"></span>
+            </h1>
+            <p style="color: var(--text-secondary); margin-bottom: 0;">Username: <span th:text="${targetUser.userId}"
+                    style="color: var(--accent-blue);"></span></p>
+        </div>
+
+        <h3 style="margin-top: 3rem;">Lịch bận chi tiết</h3>
+        <div th:if="${schedule != null}" class="table-wrapper glass">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        <th>T2</th>
+                        <th>T3</th>
+                        <th>T4</th>
+                        <th>T5</th>
+                        <th>T6</th>
+                        <th>T7</th>
+                        <th>CN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 600;">Đi chợ</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}"
+                            th:class="${#strings.substring(schedule.noMarket, i, i+1) == '1' ? 'busy' : 'free'}"
+                            th:text="${#strings.substring(schedule.noMarket, i, i+1) == '1' ? 'Bận' : 'Rảnh'}"></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Nấu trưa</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}"
+                            th:class="${#strings.substring(schedule.noCookNoon, i, i+1) == '1' ? 'busy' : 'free'}"
+                            th:text="${#strings.substring(schedule.noCookNoon, i, i+1) == '1' ? 'Bận' : 'Rảnh'}"></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Rửa trưa</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}"
+                            th:class="${#strings.substring(schedule.noWashNoon, i, i+1) == '1' ? 'busy' : 'free'}"
+                            th:text="${#strings.substring(schedule.noWashNoon, i, i+1) == '1' ? 'Bận' : 'Rảnh'}"></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Nấu tối</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}"
+                            th:class="${#strings.substring(schedule.noCookNight, i, i+1) == '1' ? 'busy' : 'free'}"
+                            th:text="${#strings.substring(schedule.noCookNight, i, i+1) == '1' ? 'Bận' : 'Rảnh'}"></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Rửa tối</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}"
+                            th:class="${#strings.substring(schedule.noWashNight, i, i+1) == '1' ? 'busy' : 'free'}"
+                            th:text="${#strings.substring(schedule.noWashNight, i, i+1) == '1' ? 'Bận' : 'Rảnh'}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:if="${schedule == null}" class="glass card" style="text-align: center; padding: 2rem;">
+            <p style="color: var(--text-secondary);">Người dùng này chưa cập nhật lịch bận.</p>
+        </div>
+
+        <div style="margin-top: 2rem; text-align: center;">
+            <a th:href="@{/roster}" class="btn btn-edit" style="margin: 0;">Quay lại bảng phân công</a>
+        </div>
+    </div>
+</body>
+
+</html>

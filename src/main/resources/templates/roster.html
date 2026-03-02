@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch phân công</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        .approved-tag {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .pending-tag {
+            background: rgba(234, 179, 8, 0.2);
+            color: #fde047;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(234, 179, 8, 0.3);
+        }
+
+        table a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        table a:hover {
+            text-decoration: underline;
+        }
+
+        .btn-cancel {
+            background: var(--accent-red) !important;
+            color: white !important;
+        }
+
+        .btn-edit {
+            background: var(--text-secondary) !important;
+            color: #0f172a !important;
+            margin-left: 0.5rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <a sec:authorize="hasAnyRole('ADMIN', 'USER')" th:href="@{/schedule}">Đăng ký lịch</a>
+        <a th:href="@{/roster}">Lịch phân công</a>
+        <a sec:authorize="hasAnyRole('ADMIN', 'USER')" th:href="@{/user/profile}">Thông tin cá nhân</a>
+        <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin}">Quản trị</a>
+        <form class="logout-form" th:action="@{/logout}" method="post">
+            <button type="submit">Đăng xuất</button>
+        </form>
+    </nav>
+
+    <div class="container">
+        <!-- Approved Roster Section -->
+        <div class="section-title">
+            <h2 style="display: flex; align-items: center; gap: 1rem;">
+                Bảng phân công chính thức
+                <span th:if="${appRoster != null}" class="approved-tag">ĐÃ DUYỆT</span>
+            </h2>
+            <div sec:authorize="hasRole('ADMIN')" th:if="${appRoster != null}">
+                <form th:action="@{/admin/cancel-roster}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-cancel">Hủy bảng đã duyệt</button>
+                </form>
+                <a th:href="@{/admin/edit-roster}" class="btn btn-edit">Tinh chỉnh lịch</a>
+            </div>
+        </div>
+
+        <div th:if="${appRoster == null}" class="glass card" style="text-align: center; padding: 3rem;">
+            <p style="color: var(--text-secondary);">Chưa có lịch phân công chính thức cho tuần này.</p>
+        </div>
+
+        <div th:if="${appRoster != null}" class="table-wrapper glass">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        <th>T2</th>
+                        <th>T3</th>
+                        <th>T4</th>
+                        <th>T5</th>
+                        <th>T6</th>
+                        <th>T7</th>
+                        <th>CN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 600;">Đi chợ</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}">
+                            <span th:if="${#strings.substring(appRoster.noMarket, i, i+1) == '0'}"
+                                style="color: var(--text-secondary);">-</span>
+                            <th:block th:if="${#strings.substring(appRoster.noMarket, i, i+1) != '0'}">
+                                <a sec:authorize="hasAnyRole('ADMIN', 'USER')"
+                                    th:href="@{'/user/profile/' + ${users[#conversions.convert(#strings.substring(appRoster.noMarket, i, i+1), 'Integer') - 1]}}"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(appRoster.noMarket, i, i+1), 'Integer') - 1]]}"></a>
+                                <span sec:authorize="hasRole('VIEWER')"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(appRoster.noMarket, i, i+1), 'Integer') - 1]]}"></span>
+                            </th:block>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Nấu trưa</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}">
+                            <span th:if="${#strings.substring(appRoster.noCookNoon, i, i+1) == '0'}"
+                                style="color: var(--text-secondary);">-</span>
+                            <th:block th:if="${#strings.substring(appRoster.noCookNoon, i, i+1) != '0'}">
+                                <a sec:authorize="hasAnyRole('ADMIN', 'USER')"
+                                    th:href="@{'/user/profile/' + ${users[#conversions.convert(#strings.substring(appRoster.noCookNoon, i, i+1), 'Integer') - 1]}}"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(appRoster.noCookNoon, i, i+1), 'Integer') - 1]]}"></a>
+                                <span sec:authorize="hasRole('VIEWER')"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(appRoster.noCookNoon, i, i+1), 'Integer') - 1]]}"></span>
+                            </th:block>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Rửa trưa</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}">
+                            <span th:if="${#strings.substring(appRoster.noWashNoon, i, i+1) == '0'}"
+                                style="color: var(--text-secondary);">-</span>
+                            <th:block th:if="${#strings.substring(appRoster.noWashNoon, i, i+1) != '0'}">
+                                <a sec:authorize="hasAnyRole('ADMIN', 'USER')"
+                                    th:href="@{'/user/profile/' + ${users[#conversions.convert(#strings.substring(appRoster.noWashNoon, i, i+1), 'Integer') - 1]}}"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(appRoster.noWashNoon, i, i+1), 'Integer') - 1]]}"></a>
+                                <span sec:authorize="hasRole('VIEWER')"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(appRoster.noWashNoon, i, i+1), 'Integer') - 1]]}"></span>
+                            </th:block>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Nấu tối</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}">
+                            <span th:if="${#strings.substring(appRoster.noCookNight, i, i+1) == '0'}"
+                                style="color: var(--text-secondary);">-</span>
+                            <th:block th:if="${#strings.substring(appRoster.noCookNight, i, i+1) != '0'}">
+                                <a sec:authorize="hasAnyRole('ADMIN', 'USER')"
+                                    th:href="@{'/user/profile/' + ${users[#conversions.convert(#strings.substring(appRoster.noCookNight, i, i+1), 'Integer') - 1]}}"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(appRoster.noCookNight, i, i+1), 'Integer') - 1]]}"></a>
+                                <span sec:authorize="hasRole('VIEWER')"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(appRoster.noCookNight, i, i+1), 'Integer') - 1]]}"></span>
+                            </th:block>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Rửa tối</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}">
+                            <span th:if="${#strings.substring(appRoster.noWashNight, i, i+1) == '0'}"
+                                style="color: var(--text-secondary);">-</span>
+                            <th:block th:if="${#strings.substring(appRoster.noWashNight, i, i+1) != '0'}">
+                                <a sec:authorize="hasAnyRole('ADMIN', 'USER')"
+                                    th:href="@{'/user/profile/' + ${users[#conversions.convert(#strings.substring(appRoster.noWashNight, i, i+1), 'Integer') - 1]}}"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(appRoster.noWashNight, i, i+1), 'Integer') - 1]]}"></a>
+                                <span sec:authorize="hasRole('VIEWER')"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(appRoster.noWashNight, i, i+1), 'Integer') - 1]]}"></span>
+                            </th:block>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pending Roster Section -->
+        <div class="section-title">
+            <h2 style="display: flex; align-items: center; gap: 1rem;">
+                Bảng dự kiến (Live)
+                <span class="pending-tag">DỰ KIẾN</span>
+            </h2>
+            <form sec:authorize="hasRole('ADMIN')" th:action="@{/admin/approve-roster}" method="post">
+                <button type="submit" class="btn">Phê duyệt lịch này</button>
+            </form>
+        </div>
+
+        <div class="table-wrapper glass" style="margin-bottom: 4rem;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        <th>T2</th>
+                        <th>T3</th>
+                        <th>T4</th>
+                        <th>T5</th>
+                        <th>T6</th>
+                        <th>T7</th>
+                        <th>CN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 600;">Đi chợ</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}">
+                            <span th:if="${#strings.substring(resMarket, i, i+1) == '0'}"
+                                style="color: var(--text-secondary);">-</span>
+                            <th:block th:if="${#strings.substring(resMarket, i, i+1) != '0'}">
+                                <a sec:authorize="hasAnyRole('ADMIN', 'USER')"
+                                    th:href="@{'/user/profile/' + ${users[#conversions.convert(#strings.substring(resMarket, i, i+1), 'Integer') - 1]}}"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(resMarket, i, i+1), 'Integer') - 1]]}"></a>
+                                <span sec:authorize="hasRole('VIEWER')"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(resMarket, i, i+1), 'Integer') - 1]]}"></span>
+                            </th:block>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Nấu trưa</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}">
+                            <span th:if="${#strings.substring(resCookNoon, i, i+1) == '0'}"
+                                style="color: var(--text-secondary);">-</span>
+                            <th:block th:if="${#strings.substring(resCookNoon, i, i+1) != '0'}">
+                                <a sec:authorize="hasAnyRole('ADMIN', 'USER')"
+                                    th:href="@{'/user/profile/' + ${users[#conversions.convert(#strings.substring(resCookNoon, i, i+1), 'Integer') - 1]}}"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(resCookNoon, i, i+1), 'Integer') - 1]]}"></a>
+                                <span sec:authorize="hasRole('VIEWER')"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(resCookNoon, i, i+1), 'Integer') - 1]]}"></span>
+                            </th:block>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Rửa trưa</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}">
+                            <span th:if="${#strings.substring(resWashNoon, i, i+1) == '0'}"
+                                style="color: var(--text-secondary);">-</span>
+                            <th:block th:if="${#strings.substring(resWashNoon, i, i+1) != '0'}">
+                                <a sec:authorize="hasAnyRole('ADMIN', 'USER')"
+                                    th:href="@{'/user/profile/' + ${users[#conversions.convert(#strings.substring(resWashNoon, i, i+1), 'Integer') - 1]}}"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(resWashNoon, i, i+1), 'Integer') - 1]]}"></a>
+                                <span sec:authorize="hasRole('VIEWER')"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(resWashNoon, i, i+1), 'Integer') - 1]]}"></span>
+                            </th:block>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Nấu tối</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}">
+                            <span th:if="${#strings.substring(resCookNight, i, i+1) == '0'}"
+                                style="color: var(--text-secondary);">-</span>
+                            <th:block th:if="${#strings.substring(resCookNight, i, i+1) != '0'}">
+                                <a sec:authorize="hasAnyRole('ADMIN', 'USER')"
+                                    th:href="@{'/user/profile/' + ${users[#conversions.convert(#strings.substring(resCookNight, i, i+1), 'Integer') - 1]}}"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(resCookNight, i, i+1), 'Integer') - 1]]}"></a>
+                                <span sec:authorize="hasRole('VIEWER')"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(resCookNight, i, i+1), 'Integer') - 1]]}"></span>
+                            </th:block>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Rửa tối</td>
+                        <td th:each="i : ${#numbers.sequence(0, 6)}">
+                            <span th:if="${#strings.substring(resWashNight, i, i+1) == '0'}"
+                                style="color: var(--text-secondary);">-</span>
+                            <th:block th:if="${#strings.substring(resWashNight, i, i+1) != '0'}">
+                                <a sec:authorize="hasAnyRole('ADMIN', 'USER')"
+                                    th:href="@{'/user/profile/' + ${users[#conversions.convert(#strings.substring(resWashNight, i, i+1), 'Integer') - 1]}}"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(resWashNight, i, i+1), 'Integer') - 1]]}"></a>
+                                <span sec:authorize="hasRole('VIEWER')"
+                                    th:text="${nameMap[users[#conversions.convert(#strings.substring(resWashNight, i, i+1), 'Integer') - 1]]}"></span>
+                            </th:block>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        const socket = new SockJS('/ws');
+        const stompClient = Stomp.over(socket);
+        stompClient.connect({}, function (frame) {
+            stompClient.subscribe('/topic/roster', function (message) {
+                window.location.reload();
+            });
+        });
+    </script>
+</body>
+
+</html>

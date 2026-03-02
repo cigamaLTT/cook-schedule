@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tinh chỉnh lịch</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .dimmed {
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .highlight {
+            background-color: rgba(234, 179, 8, 0.3) !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            border: 2px dashed var(--accent-blue) !important;
+        }
+
+        .selected {
+            border: 3px solid var(--accent-blue) !important;
+            background: rgba(56, 189, 248, 0.1) !important;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+        }
+
+        .modal-content {
+            background: var(--bg-color);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal h3 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .btn-modal {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-modal:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-blue);
+        }
+
+        .variance-badge {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-blue);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        td {
+            cursor: pointer;
+            position: relative;
+        }
+
+        td:hover:not(:first-child) {
+            background: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <a sec:authorize="hasAnyRole('ADMIN', 'USER')" th:href="@{/schedule}">Đăng ký lịch</a>
+        <a th:href="@{/roster}">Lịch phân công</a>
+        <a sec:authorize="hasAnyRole('ADMIN', 'USER')" th:href="@{/user/profile}">Thông tin cá nhân</a>
+        <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin}">Quản trị</a>
+        <form class="logout-form" th:action="@{/logout}" method="post">
+            <button type="submit">Đăng xuất</button>
+        </form>
+    </nav>
+
+    <div class="container">
+        <h1>Tinh chỉnh lịch phân công</h1>
+
+        <div th:if="${param.success}" class="glass"
+            style="padding: 1rem; border-color: rgba(34, 197, 94, 0.3); margin-bottom: 2rem; border-radius: 0.5rem; background: rgba(34, 197, 94, 0.1);">
+            <p style="color: #4ade80; margin: 0; font-weight: 600;">Đã lưu thay đổi thành công!</p>
+        </div>
+
+        <div class="glass card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <button onclick="calculateVariance()" class="btn"
+                    style="background: var(--text-secondary); color: #0f172a;">Kiểm tra phương sai</button>
+                <div id="varianceResultContainer" style="display: none;">
+                    <span id="varianceResult" class="variance-badge"></span>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="editTable">
+                    <thead>
+                        <tr>
+                            <th>Công việc</th>
+                            <th>T2</th>
+                            <th>T3</th>
+                            <th>T4</th>
+                            <th>T5</th>
+                            <th>T6</th>
+                            <th>T7</th>
+                            <th>CN</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="rowName : ${ {'noMarket', 'noCookNoon', 'noWashNoon', 'noCookNight', 'noWashNight'} }"
+                            th:attr="data-key=${rowName}">
+                            <td style="font-weight: 600; background: rgba(15, 23, 42, 0.4);"
+                                th:text="${rowName == 'noMarket' ? 'Đi chợ' : (rowName == 'noCookNoon' ? 'Nấu trưa' : (rowName == 'noWashNoon' ? 'Rửa trưa' : (rowName == 'noCookNight' ? 'Nấu tối' : (rowName == 'noWashNight' ? 'Rửa tối' : rowName)))) }">
+                            </td>
+                            <td th:each="i : ${#numbers.sequence(0, 6)}" th:attr="data-row=${rowName}, data-col=${i}"
+                                onclick="handleCellClick(this)">
+                                <span class="cell-text"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <form id="saveForm" th:action="@{/admin/save-roster}" method="post"
+                style="margin-top: 3rem; text-align: center;">
+                <input type="hidden" name="noMarket" id="h-noMarket" />
+                <input type="hidden" name="noCookNoon" id="h-noCookNoon" />
+                <input type="hidden" name="noWashNoon" id="h-noWashNoon" />
+                <input type="hidden" name="noCookNight" id="h-noCookNight" />
+                <input type="hidden" name="noWashNight" id="h-noWashNight" />
+                <button type="button" onclick="prepareAndSave()" class="btn"
+                    style="background: var(--accent-green); color: #0f172a; width: 100%; max-width: 300px; font-size: 1.1rem; padding: 1rem;">LƯU
+                    THAY ĐỔI</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="closeModal()"></div>
+    <div class="modal" id="cellModal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Chọn thao tác</h3>
+            <div class="modal-buttons">
+                <button class="btn-modal" onclick="startSwap()">Swap (Đổi chỗ)</button>
+                <button class="btn-modal" onclick="showReplace()">Replace (Thay thế)</button>
+            </div>
+            <div id="replaceSection"
+                style="display:none; margin-top: 1.5rem; border-top: 1px solid var(--glass-border); padding-top: 1.5rem;">
+                <label
+                    style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Chọn
+                    người thay thế:</label>
+                <select id="userSelect" style="margin-bottom: 1rem;"></select>
+                <button class="btn" style="width: 100%;" onclick="confirmReplace()">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const rosters = {
+            noMarket: /*[[${appRoster != null ? appRoster.noMarket : '0000000'}]]*/ '0000000',
+            noCookNoon: /*[[${appRoster != null ? appRoster.noCookNoon : '0000000'}]]*/ '0000000',
+            noWashNoon: /*[[${appRoster != null ? appRoster.noWashNoon : '0000000'}]]*/ '0000000',
+            noCookNight: /*[[${appRoster != null ? appRoster.noCookNight : '0000000'}]]*/ '0000000',
+            noWashNight: /*[[${appRoster != null ? appRoster.noWashNight : '0000000'}]]*/ '0000000'
+        };
+        const users = /*[[${users}]]*/[]; // List of usernames
+        const nameMap = /*[[${nameMap}]]*/ {};
+        const schedules = /*[[${schedules}]]*/[]; // List of UserSchedule objects
+
+        let currentCell = null;
+        let swapMode = false;
+
+        function initTable() {
+            document.querySelectorAll('#editTable tbody tr').forEach(tr => {
+                const rowKey = tr.getAttribute('data-key');
+                const cells = tr.querySelectorAll('td:not(:first-child)');
+                const data = rosters[rowKey];
+                cells.forEach((cell, idx) => {
+                    const val = data.charAt(idx);
+                    cell.querySelector('.cell-text').innerText = (val === '0') ? '-' : nameMap[users[parseInt(val) - 1]];
+                    cell.setAttribute('data-val', val);
+                });
+            });
+        }
+
+        function handleCellClick(cell) {
+            if (swapMode) {
+                if (cell.classList.contains('highlight')) {
+                    executeSwap(currentCell, cell);
+                } else {
+                    cancelSwap();
+                }
+                return;
+            }
+            currentCell = cell;
+            document.getElementById('cellModal').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('replaceSection').style.display = 'none';
+        }
+
+        function closeModal() {
+            document.getElementById('cellModal').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+            cancelSwap();
+        }
+
+        function startSwap() {
+            document.getElementById('cellModal').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+            swapMode = true;
+            currentCell.classList.add('selected');
+
+            // Highlight valid swap targets
+            const row1 = currentCell.getAttribute('data-row');
+            const col1 = parseInt(currentCell.getAttribute('data-col'));
+            const val1 = currentCell.getAttribute('data-val');
+
+            document.querySelectorAll('#editTable td[data-val]').forEach(cell => {
+                if (cell === currentCell) return;
+
+                const row2 = cell.getAttribute('data-row');
+                const col2 = parseInt(cell.getAttribute('data-col'));
+                const val2 = cell.getAttribute('data-val');
+
+                // --- Swap Logic: Check availability ---
+                if (isAvailable(val1, row2, col2) && isAvailable(val2, row1, col1)) {
+                    cell.classList.add('highlight');
+                } else {
+                    cell.classList.add('dimmed');
+                }
+            });
+        }
+
+        function isAvailable(val, row, col) {
+            if (val === '0') return true;
+            const username = users[parseInt(val) - 1];
+            const sched = schedules.find(s => s.username === username);
+            if (!sched) return true;
+            // Get the field value (e.g., '1' means busy)
+            return sched[row].charAt(col) === '0';
+        }
+
+        function executeSwap(c1, c2) {
+            const v1 = c1.getAttribute('data-val');
+            const v2 = c2.getAttribute('data-val');
+            const t1 = c1.innerText;
+            const t2 = c2.innerText;
+
+            c1.setAttribute('data-val', v2);
+            c2.setAttribute('data-val', v1);
+            c1.querySelector('.cell-text').innerText = t2;
+            c2.querySelector('.cell-text').innerText = t1;
+
+            cancelSwap();
+        }
+
+        function cancelSwap() {
+            swapMode = false;
+            document.querySelectorAll('td').forEach(c => c.classList.remove('dimmed', 'highlight', 'selected'));
+        }
+
+        function showReplace() {
+            const row = currentCell.getAttribute('data-row');
+            const col = parseInt(currentCell.getAttribute('data-col'));
+
+            const select = document.getElementById('userSelect');
+            select.innerHTML = '<option value="0">- Trống -</option>';
+
+            users.forEach((uname, idx) => {
+                const sched = schedules.find(s => s.username === uname);
+                if (sched && sched[row].charAt(col) === '0') {
+                    const opt = document.createElement('option');
+                    opt.value = (idx + 1).toString();
+                    opt.innerText = nameMap[uname];
+                    select.appendChild(opt);
+                }
+            });
+            document.getElementById('replaceSection').style.display = 'block';
+        }
+
+        function confirmReplace() {
+            const val = document.getElementById('userSelect').value;
+            currentCell.setAttribute('data-val', val);
+            currentCell.querySelector('.cell-text').innerText = (val === '0') ? '-' : nameMap[users[parseInt(val) - 1]];
+            closeModal();
+        }
+
+        // --- Variance Calculation ---
+        function calculateVariance() {
+            const counts = {};
+            users.forEach(u => counts[u] = 0);
+
+            let total = 0;
+            document.querySelectorAll('td[data-val]').forEach(c => {
+                const v = c.getAttribute('data-val');
+                if (v !== '0') {
+                    counts[users[parseInt(v) - 1]]++;
+                    total++;
+                }
+            });
+
+            const m = total / users.length;
+            let sumSqDiff = 0;
+            users.forEach(u => {
+                sumSqDiff += Math.pow(counts[u] - m, 2);
+            });
+            const variance = sumSqDiff / users.length;
+            document.getElementById('varianceResult').innerText = "Phương sai: " + variance.toFixed(4);
+            document.getElementById('varianceResultContainer').style.display = 'block';
+        }
+
+        function prepareAndSave() {
+            const result = { noMarket: "", noCookNoon: "", noWashNoon: "", noCookNight: "", noWashNight: "" };
+            ['noMarket', 'noCookNoon', 'noWashNoon', 'noCookNight', 'noWashNight'].forEach(row => {
+                document.querySelectorAll(`td[data-row="${row}"]`).forEach(td => {
+                    result[row] += td.getAttribute('data-val');
+                });
+                document.getElementById('h-' + row).value = result[row];
+            });
+            document.getElementById('saveForm').submit();
+        }
+
+        initTable();
+        /*]]>*/
+    </script>
+</body>
+
+</html>

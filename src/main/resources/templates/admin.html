@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản trị</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav>
+        <a sec:authorize="hasAnyRole('ADMIN', 'USER')" th:href="@{/schedule}">Đăng ký lịch</a>
+        <a th:href="@{/roster}">Lịch phân công</a>
+        <a sec:authorize="hasAnyRole('ADMIN', 'USER')" th:href="@{/user/profile}">Thông tin cá nhân</a>
+        <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin}">Quản trị</a>
+        <form class="logout-form" th:action="@{/logout}" method="post">
+            <button type="submit">Đăng xuất</button>
+        </form>
+    </nav>
+
+    <div class="container">
+        <h1>Quản trị hệ thống</h1>
+
+        <!-- Create User Section -->
+        <div class="glass card">
+            <h3>Tạo người dùng mới</h3>
+            <form th:action="@{/admin/users/create}" method="post"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+                <div>
+                    <label
+                        style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Username</label>
+                    <input type="text" name="userId" placeholder="Username" required style="margin-bottom: 0;" />
+                </div>
+                <div>
+                    <label
+                        style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Tên
+                        hiển thị</label>
+                    <input type="text" name="displayName" placeholder="Tên hiển thị" required
+                        style="margin-bottom: 0;" />
+                </div>
+                <div>
+                    <label
+                        style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Mật
+                        khẩu</label>
+                    <input type="password" name="password" placeholder="Mật khẩu" required style="margin-bottom: 0;" />
+                </div>
+                <div>
+                    <label
+                        style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Vai
+                        trò</label>
+                    <select name="role" style="margin-bottom: 0;">
+                        <option value="USER">USER</option>
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="VIEWER">VIEWER</option>
+                    </select>
+                </div>
+                <button type="submit" style="white-space: nowrap;">Tạo tài khoản</button>
+            </form>
+        </div>
+
+        <div th:if="${param.createSuccess}" class="glass"
+            style="padding: 1rem; border-color: rgba(34, 197, 94, 0.3); margin-bottom: 1rem; border-radius: 0.5rem; background: rgba(34, 197, 94, 0.1);">
+            <p style="color: #4ade80; margin: 0;">Đã tạo thành công user: <span th:text="${param.createSuccess}"
+                    style="font-weight: 600;"></span></p>
+        </div>
+        <div th:if="${param.resetSuccess}" class="glass"
+            style="padding: 1rem; border-color: rgba(56, 189, 248, 0.3); margin-bottom: 1rem; border-radius: 0.5rem; background: rgba(56, 189, 248, 0.1);">
+            <p style="color: var(--accent-blue); margin: 0;">Đã reset mật khẩu cho user: <span
+                    th:text="${param.resetSuccess}" style="font-weight: 600;"></span></p>
+        </div>
+
+        <!-- User List Section -->
+        <h3 style="margin-top: 3rem;">Danh sách người dùng</h3>
+        <div class="table-wrapper glass">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Tên hiển thị</th>
+                        <th>Vai trò</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="u : ${users}">
+                        <td th:text="${u.userId}" style="font-weight: 600;"></td>
+                        <td th:text="${u.displayName}"></td>
+                        <td>
+                            <span th:text="${u.role}"
+                                th:style="${u.role == 'ADMIN' ? 'color: var(--accent-red); font-weight: 600;' : ''}"></span>
+                        </td>
+                        <td>
+                            <form th:action="@{/admin/reset-password}" method="post" style="display:inline;">
+                                <input type="hidden" name="userId" th:value="${u.userId}" />
+                                <button type="submit" class="btn"
+                                    style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--text-secondary);">Reset
+                                    mật khẩu</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Management Section -->
+        <h3 style="margin-top: 3rem;">Quản lý chung</h3>
+        <div class="glass card" style="border-color: rgba(239, 68, 68, 0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h4 style="margin: 0; color: #f87171;">Hủy đăng ký tất cả</h4>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: var(--text-secondary);">Xóa toàn bộ dữ
+                        liệu đăng ký lịch của tất cả thành viên trong tuần này.</p>
+                </div>
+                <form th:action="@{/admin/users/clear-all-schedules}" method="post"
+                    onsubmit="return confirm('Bạn có chắc chắn muốn xóa tất cả đăng ký lịch? Hành động này không thể hoàn tác.')">
+                    <button type="submit" class="btn"
+                        style="background: var(--accent-red); color: white; padding: 0.75rem 1.5rem;">Xóa tất cả đăng
+                        ký</button>
+                </form>
+            </div>
+        </div>
+
+        <div th:if="${param.clearAllSuccess}" class="glass"
+            style="padding: 1rem; border-color: rgba(34, 197, 94, 0.3); margin-top: 1rem; border-radius: 0.5rem; background: rgba(34, 197, 94, 0.1); text-align: center;">
+            <p style="color: #4ade80; margin: 0; font-weight: 600;">Đã xóa toàn bộ đăng ký lịch thành công!</p>
+        </div>
+    </div>
+</body>
+
+</html>

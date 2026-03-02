@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký lịch</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav>
+        <a sec:authorize="hasAnyRole('ADMIN', 'USER')" th:href="@{/schedule}">Đăng ký lịch</a>
+        <a th:href="@{/roster}">Lịch phân công</a>
+        <a sec:authorize="hasAnyRole('ADMIN', 'USER')" th:href="@{/user/profile}">Thông tin cá nhân</a>
+        <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin}">Quản trị</a>
+        <form class="logout-form" th:action="@{/logout}" method="post">
+            <button type="submit">Đăng xuất</button>
+        </form>
+    </nav>
+
+    <div class="container">
+        <h1>Đăng ký lịch rảnh</h1>
+
+        <div th:if="${param.cleared}" class="glass"
+            style="padding: 1rem; border-color: rgba(239, 68, 68, 0.3); margin-bottom: 2rem; border-radius: 0.5rem; background: rgba(239, 68, 68, 0.1); text-align: center;">
+            <p style="color: #f87171; margin: 0; font-weight: 600;">Đã hủy đăng ký lịch thành công!</p>
+        </div>
+
+        <form th:action="@{/schedule}" method="post" class="glass card">
+            <div class="registration-section">
+                <h3>1. Không muốn đi chợ</h3>
+                <div class="checkbox-grid">
+                    <th:block th:each="i : ${#numbers.sequence(0, 6)}">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="noMarket" th:value="${i}"
+                                th:checked="${schedule.noMarket != null and #strings.length(schedule.noMarket) > i and #strings.substring(schedule.noMarket, i, i+1) == '1'}" />
+                            <span th:text="${i == 6 ? 'CN' : 'T' + (i + 2)}"></span>
+                        </label>
+                    </th:block>
+                </div>
+            </div>
+
+            <div class="registration-section">
+                <h3>2. Không thể nấu trưa (10h-12h)</h3>
+                <div class="checkbox-grid">
+                    <th:block th:each="i : ${#numbers.sequence(0, 6)}">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="noCookNoon" th:value="${i}"
+                                th:checked="${schedule.noCookNoon != null and #strings.length(schedule.noCookNoon) > i and #strings.substring(schedule.noCookNoon, i, i+1) == '1'}" />
+                            <span th:text="${i == 6 ? 'CN' : 'T' + (i + 2)}"></span>
+                        </label>
+                    </th:block>
+                </div>
+            </div>
+
+            <div class="registration-section">
+                <h3>3. Không thể rửa trưa (12h-13h)</h3>
+                <div class="checkbox-grid">
+                    <th:block th:each="i : ${#numbers.sequence(0, 6)}">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="noWashNoon" th:value="${i}"
+                                th:checked="${schedule.noWashNoon != null and #strings.length(schedule.noWashNoon) > i and #strings.substring(schedule.noWashNoon, i, i+1) == '1'}" />
+                            <span th:text="${i == 6 ? 'CN' : 'T' + (i + 2)}"></span>
+                        </label>
+                    </th:block>
+                </div>
+            </div>
+
+            <div class="registration-section">
+                <h3>4. Không thể nấu tối (16h-18h)</h3>
+                <div class="checkbox-grid">
+                    <th:block th:each="i : ${#numbers.sequence(0, 6)}">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="noCookNight" th:value="${i}"
+                                th:checked="${schedule.noCookNight != null and #strings.length(schedule.noCookNight) > i and #strings.substring(schedule.noCookNight, i, i+1) == '1'}" />
+                            <span th:text="${i == 6 ? 'CN' : 'T' + (i + 2)}"></span>
+                        </label>
+                    </th:block>
+                </div>
+            </div>
+
+            <div class="registration-section">
+                <h3>5. Không thể rửa tối (18h-22h)</h3>
+                <div class="checkbox-grid">
+                    <th:block th:each="i : ${#numbers.sequence(0, 6)}">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="noWashNight" th:value="${i}"
+                                th:checked="${schedule.noWashNight != null and #strings.length(schedule.noWashNight) > i and #strings.substring(schedule.noWashNight, i, i+1) == '1'}" />
+                            <span th:text="${i == 6 ? 'CN' : 'T' + (i + 2)}"></span>
+                        </label>
+                    </th:block>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem;">
+                <button type="submit">Lưu thay đổi</button>
+                <button type="submit" th:formaction="@{/schedule/clear}" class="btn"
+                    style="background: var(--accent-red); color: white;">Hủy đăng ký lịch</button>
+            </div>
+        </form>
+    </div>
+
+    <br />
+</body>
+
+</html>
