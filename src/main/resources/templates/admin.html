@@ -72,6 +72,15 @@
             <p style="color: var(--accent-blue); margin: 0;">Đã reset mật khẩu cho user: <span
                     th:text="${param.resetSuccess}" style="font-weight: 600;"></span></p>
         </div>
+        <div th:if="${param.deleteSuccess}" class="glass"
+            style="padding: 1rem; border-color: rgba(239, 68, 68, 0.3); margin-bottom: 1rem; border-radius: 0.5rem; background: rgba(239, 68, 68, 0.1);">
+            <p style="color: #f87171; margin: 0;">Đã xóa thành công user: <span th:text="${param.deleteSuccess}"
+                    style="font-weight: 600;"></span></p>
+        </div>
+        <div th:if="${param.error == 'selfDelete'}" class="glass"
+            style="padding: 1rem; border-color: rgba(239, 68, 68, 0.3); margin-bottom: 1rem; border-radius: 0.5rem; background: rgba(239, 68, 68, 0.1);">
+            <p style="color: #f87171; margin: 0;">Bạn không thể tự xóa chính mình!</p>
+        </div>
 
         <!-- User List Section -->
         <h3 style="margin-top: 3rem;">Danh sách người dùng</h3>
@@ -97,8 +106,14 @@
                             <form th:action="@{/admin/reset-password}" method="post" style="display:inline;">
                                 <input type="hidden" name="userId" th:value="${u.userId}" />
                                 <button type="submit" class="btn"
-                                    style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--text-secondary);">Reset
+                                    style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--text-secondary); margin-right: 0.5rem;">Reset
                                     mật khẩu</button>
+                            </form>
+                            <form th:action="@{/admin/users/delete}" method="post" style="display:inline;"
+                                onsubmit="return confirm('Bạn có chắc chắn muốn xóa người dùng này? Toàn bộ dữ liệu của họ sẽ bị mất.')">
+                                <input type="hidden" name="userId" th:value="${u.userId}" />
+                                <button type="submit" class="btn"
+                                    style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--accent-red); color: white;">Xóa</button>
                             </form>
                         </td>
                     </tr>
