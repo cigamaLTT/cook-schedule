@@ -49,7 +49,11 @@ public class ScheduleController {
     }
 
     @GetMapping("/roster")
-    public String getRoster(Model model) {
+    public String getRoster(Model model, @RequestParam(required = false) Integer seed) {
+        if (seed == null) {
+            seed = new java.util.Random().nextInt(255) + 1;
+        }
+
         List<UserSchedule> schedules = userScheduleRepository.findAll();
         List<UserAccount> accounts = userAccountRepository.findAll();
         List<String> userNames = schedules.stream().map(UserSchedule::getUsername).toList();
@@ -60,18 +64,19 @@ public class ScheduleController {
 
         model.addAttribute("nameMap", nameMap);
         model.addAttribute("users", userNames);
+        model.addAttribute("seed", seed);
 
         // --- Pending Roster Data ---
         model.addAttribute("resMarket", algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoMarket).toList()));
+                schedules.stream().map(UserSchedule::getNoMarket).toList(), seed));
         model.addAttribute("resCookNoon", algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoCookNoon).toList()));
+                schedules.stream().map(UserSchedule::getNoCookNoon).toList(), seed));
         model.addAttribute("resWashNoon", algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoWashNoon).toList()));
+                schedules.stream().map(UserSchedule::getNoWashNoon).toList(), seed));
         model.addAttribute("resCookNight", algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoCookNight).toList()));
+                schedules.stream().map(UserSchedule::getNoCookNight).toList(), seed));
         model.addAttribute("resWashNight", algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoWashNight).toList()));
+                schedules.stream().map(UserSchedule::getNoWashNight).toList(), seed));
 
         // --- Approved Roster Data ---
         model.addAttribute("appRoster", approved);

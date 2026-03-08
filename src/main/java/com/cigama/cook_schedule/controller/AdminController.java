@@ -67,20 +67,24 @@ public class AdminController {
     }
 
     @PostMapping("/approve-roster")
-    public String approveRoster() {
+    public String approveRoster(@RequestParam(required = false) Integer seed) {
+        if (seed == null) {
+            seed = new java.util.Random().nextInt(255) + 1;
+        }
+
         List<UserSchedule> schedules = userScheduleRepository.findAll();
         List<String> userNames = schedules.stream().map(UserSchedule::getUsername).toList();
 
         String market = algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoMarket).toList());
+                schedules.stream().map(UserSchedule::getNoMarket).toList(), seed);
         String cookNoon = algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoCookNoon).toList());
+                schedules.stream().map(UserSchedule::getNoCookNoon).toList(), seed);
         String washNoon = algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoWashNoon).toList());
+                schedules.stream().map(UserSchedule::getNoWashNoon).toList(), seed);
         String cookNight = algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoCookNight).toList());
+                schedules.stream().map(UserSchedule::getNoCookNight).toList(), seed);
         String washNight = algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoWashNight).toList());
+                schedules.stream().map(UserSchedule::getNoWashNight).toList(), seed);
 
         ApprovedRoster approved = new ApprovedRoster(1, market, cookNoon, washNoon, cookNight, washNight);
         approvedRosterRepository.save(approved);
@@ -138,10 +142,10 @@ public class AdminController {
         if (principal.getName().equals(userId)) {
             return "redirect:/admin?error=selfDelete";
         }
-        
+
         userAccountRepository.deleteById(userId);
         userScheduleRepository.deleteById(userId);
-        
+
         simpMessagingTemplate.convertAndSend("/topic/roster", "UPDATED");
         return "redirect:/admin?deleteSuccess=" + userId;
     }
