@@ -72,7 +72,9 @@
         <div class="section-title">
             <h2 style="display: flex; align-items: center; gap: 1rem;">
                 Bảng phân công chính thức
-                <span th:if="${appRoster != null}" class="approved-tag">ĐÃ DUYỆT</span>
+                <span th:if="${appRoster != null}" class="approved-tag"
+                    th:text="'ĐÃ DUYỆT' + (${appRoster.seed != null} ? ' (Seed: ' + ${appRoster.seed} + ')' : '')">ĐÃ
+                    DUYỆT</span>
             </h2>
             <div sec:authorize="hasRole('ADMIN')" th:if="${appRoster != null}">
                 <form th:action="@{/admin/cancel-roster}" method="post" style="display:inline;">
@@ -179,11 +181,22 @@
         <div class="section-title">
             <h2 style="display: flex; align-items: center; gap: 1rem;">
                 Bảng dự kiến (Live)
-                <span class="pending-tag">DỰ KIẾN</span>
+                <span class="pending-tag" th:text="'DỰ KIẾN (Seed: ' + ${seed} + ')'">DỰ KIẾN</span>
             </h2>
-            <form sec:authorize="hasRole('ADMIN')" th:action="@{/admin/approve-roster}" method="post">
-                <button type="submit" class="btn">Phê duyệt lịch này</button>
-            </form>
+            <div sec:authorize="hasRole('ADMIN')" style="display: flex; gap: 1rem; align-items: center;">
+                <form th:action="@{/roster}" method="get" style="display: flex; gap: 0.5rem; align-items: center;">
+                    <label style="font-size: 0.9rem; font-weight: 500;">Seed tạo lịch:</label>
+                    <input type="number" name="seed" th:value="${seed}" min="1" max="255" required
+                        style="width: 70px; padding: 0.4rem; border: 1px solid var(--glass-border); border-radius: 0.25rem; background: var(--bg-color); color: var(--text-primary);">
+                    <button type="submit" class="btn"
+                        style="background: var(--text-secondary); color: #0f172a; padding: 0.4rem 0.8rem;">Đổi
+                        Seed</button>
+                </form>
+                <form th:action="@{/admin/approve-roster}" method="post">
+                    <input type="hidden" name="seed" th:value="${seed}">
+                    <button type="submit" class="btn">Phê duyệt lịch này</button>
+                </form>
+            </div>
         </div>
 
         <div class="table-wrapper glass" style="margin-bottom: 4rem;">
