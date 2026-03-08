@@ -9,7 +9,7 @@ public class AlgorithmService {
 
     // --- Variables & Initialization ---
 
-    public String findOptimalAssignment(List<String> userNames, List<String> strings) {
+    public String findOptimalAssignment(List<String> userNames, List<String> strings, int seed) {
         int n = 7;
         int m = userNames.size();
         char[] output = new char[n];
@@ -57,7 +57,7 @@ public class AlgorithmService {
         }
 
         // --- MCMF Execution ---
-        graph.runMCMF(source, sink);
+        graph.runMCMF(source, sink, seed);
 
         // --- Result Extraction ---
         for (Edge edge : graph.getAllEdges()) {
@@ -127,7 +127,8 @@ public class AlgorithmService {
             return allEdges;
         }
 
-        void runMCMF(Node source, Node sink) {
+        void runMCMF(Node source, Node sink, int seed) {
+            Random random = new Random(seed);
             while (true) {
                 Map<Node, Integer> distances = new HashMap<>();
                 Map<Node, Edge> parents = new HashMap<>();
@@ -144,7 +145,10 @@ public class AlgorithmService {
                     Node u = queue.poll();
                     inQueue.remove(u);
 
-                    for (Edge edge : u.edges) {
+                    List<Edge> shuffledEdges = new ArrayList<>(u.edges);
+                    Collections.shuffle(shuffledEdges, random);
+
+                    for (Edge edge : shuffledEdges) {
                         if (edge.capacity > edge.flow && distances.get(edge.to) > distances.get(u) + edge.cost) {
                             distances.put(edge.to, distances.get(u) + edge.cost);
                             parents.put(edge.to, edge);
