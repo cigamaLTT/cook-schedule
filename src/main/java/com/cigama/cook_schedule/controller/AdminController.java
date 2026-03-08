@@ -86,7 +86,7 @@ public class AdminController {
         String washNight = algorithmService.findOptimalAssignment(userNames,
                 schedules.stream().map(UserSchedule::getNoWashNight).toList(), seed);
 
-        ApprovedRoster approved = new ApprovedRoster(1, market, cookNoon, washNoon, cookNight, washNight);
+        ApprovedRoster approved = new ApprovedRoster(1, market, cookNoon, washNoon, cookNight, washNight, seed);
         approvedRosterRepository.save(approved);
 
         simpMessagingTemplate.convertAndSend("/topic/roster", "UPDATED");
@@ -123,8 +123,17 @@ public class AdminController {
             @RequestParam(defaultValue = "0000000") String noCookNoon,
             @RequestParam(defaultValue = "0000000") String noWashNoon,
             @RequestParam(defaultValue = "0000000") String noCookNight,
-            @RequestParam(defaultValue = "0000000") String noWashNight) {
-        ApprovedRoster approved = new ApprovedRoster(1, noMarket, noCookNoon, noWashNoon, noCookNight, noWashNight);
+            @RequestParam(defaultValue = "0000000") String noWashNight,
+            @RequestParam(required = false) Integer seed) {
+
+        if (seed == null) {
+            ApprovedRoster existing = approvedRosterRepository.findById(1).orElse(null);
+            seed = (existing != null && existing.getSeed() != null) ? existing.getSeed()
+                    : new java.util.Random().nextInt(255) + 1;
+        }
+
+        ApprovedRoster approved = new ApprovedRoster(1, noMarket, noCookNoon, noWashNoon, noCookNight, noWashNight,
+                seed);
         approvedRosterRepository.save(approved);
         simpMessagingTemplate.convertAndSend("/topic/roster", "UPDATED");
         return "redirect:/admin/edit-roster?success";
