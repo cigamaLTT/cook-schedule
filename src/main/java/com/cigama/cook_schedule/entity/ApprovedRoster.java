@@ -22,4 +22,5 @@ public class ApprovedRoster {
     private String noWashNoon;
     private String noCookNight;
     private String noWashNight;
+    private Integer seed;
 }
