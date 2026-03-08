@@ -148,9 +148,27 @@ public class AlgorithmService {
                     List<Edge> shuffledEdges = new ArrayList<>(u.edges);
                     Collections.shuffle(shuffledEdges, random);
 
+                    // Add consecutive day avoidance
+                    if (u.name.startsWith("P_")) {
+                        int dayPos = Integer.parseInt(u.name.substring(2));
+                        shuffledEdges.sort((e1, e2) -> {
+                            int penalty1 = getConsecutivePenalty(e1, dayPos);
+                            int penalty2 = getConsecutivePenalty(e2, dayPos);
+                            return Integer.compare(penalty1, penalty2);
+                        });
+                    }
+
                     for (Edge edge : shuffledEdges) {
-                        if (edge.capacity > edge.flow && distances.get(edge.to) > distances.get(u) + edge.cost) {
-                            distances.put(edge.to, distances.get(u) + edge.cost);
+                        int currentCost = edge.cost;
+                        if (u.name.startsWith("P_")) {
+                            int dayPos = Integer.parseInt(u.name.substring(2));
+                            if (getConsecutivePenalty(edge, dayPos) > 0) {
+                                currentCost += 1000;
+                            }
+                        }
+
+                        if (edge.capacity > edge.flow && distances.get(edge.to) > distances.get(u) + currentCost) {
+                            distances.put(edge.to, distances.get(u) + currentCost);
                             parents.put(edge.to, edge);
                             if (!inQueue.contains(edge.to)) {
                                 queue.add(edge.to);
@@ -179,6 +197,22 @@ public class AlgorithmService {
                     curr = edge.from;
                 }
             }
+        }
+
+        private int getConsecutivePenalty(Edge edge, int dayPos) {
+            if (!edge.to.name.startsWith("C_"))
+                return 0;
+            for (Edge neighborEdge : edge.to.edges) {
+                if (neighborEdge.to.name.startsWith("P_")) {
+                    int neighborDay = Integer.parseInt(neighborEdge.to.name.substring(2));
+                    if (Math.abs(neighborDay - dayPos) == 1) {
+                        if (neighborEdge.reverseEdge != null && neighborEdge.reverseEdge.flow == 1) {
+                            return 1;
+                        }
+                    }
+                }
+            }
+            return 0;
         }
     }
 }

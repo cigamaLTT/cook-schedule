@@ -51,7 +51,9 @@ public class ScheduleController {
     @GetMapping("/roster")
     public String getRoster(Model model, @RequestParam(required = false) Integer seed) {
         if (seed == null) {
-            seed = new java.util.Random().nextInt(255) + 1;
+            ApprovedRoster existing = approvedRosterRepository.findById(1).orElse(null);
+            seed = (existing != null && existing.getSeed() != null) ? existing.getSeed()
+                    : new java.util.Random().nextInt(255) + 1;
         }
 
         List<UserSchedule> schedules = userScheduleRepository.findAll();
