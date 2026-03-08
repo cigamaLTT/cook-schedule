@@ -183,6 +183,7 @@ public class AlgorithmService {
                 int pushFlow = 1;
                 Node taskNode = null;
                 Node userNode = null;
+                boolean isAssignment = true;
 
                 Node curr = sink;
                 while (curr != source) {
@@ -193,6 +194,11 @@ public class AlgorithmService {
                     if (edge.from.name.startsWith("T_") && edge.to.name.startsWith("U_")) {
                         taskNode = edge.from;
                         userNode = edge.to;
+                        isAssignment = true;
+                    } else if (edge.from.name.startsWith("U_") && edge.to.name.startsWith("T_")) {
+                        userNode = edge.from;
+                        taskNode = edge.to;
+                        isAssignment = false;
                     }
 
                     curr = edge.from;
@@ -203,22 +209,24 @@ public class AlgorithmService {
                     int d = Integer.parseInt(parts[1]);
                     int t = Integer.parseInt(parts[2]);
 
+                    int penalty = isAssignment ? 1000 : -1000;
+
                     Node prevTask = getNodeByName("T_" + d + "_" + (t - 1));
                     Node nextTask = getNodeByName("T_" + d + "_" + (t + 1));
 
                     if (prevTask != null) {
                         for (Edge e : prevTask.edges) {
                             if (e.to == userNode && e.capacity > 0) {
-                                e.cost += 1000;
-                                e.reverseEdge.cost -= 1000;
+                                e.cost += penalty;
+                                e.reverseEdge.cost -= penalty;
                             }
                         }
                     }
                     if (nextTask != null) {
                         for (Edge e : nextTask.edges) {
                             if (e.to == userNode && e.capacity > 0) {
-                                e.cost += 1000;
-                                e.reverseEdge.cost -= 1000;
+                                e.cost += penalty;
+                                e.reverseEdge.cost -= penalty;
                             }
                         }
                     }
