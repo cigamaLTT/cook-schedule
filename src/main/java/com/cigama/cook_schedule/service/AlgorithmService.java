@@ -7,29 +7,16 @@ import java.util.*;
 @Service
 public class AlgorithmService {
 
-    // --- Variables & Initialization ---
+    // --- Unified Graph Algorithm ---
 
-    public String findOptimalAssignment(List<String> userNames, List<String> strings, int seed) {
-        int n = 7;
+    public Map<String, String> generateFullRoster(List<String> userNames, List<List<String>> allTasks, int seed) {
+        int numDays = 7;
+        int numTasks = 5;
         int m = userNames.size();
-        char[] output = new char[n];
-        List<Integer> pNodes = new ArrayList<>();
 
-        // --- Preprocessing ---
-        for (int i = 0; i < n; i++) {
-            boolean allOnes = true;
-            for (int j = 0; j < m; j++) {
-                if (strings.get(j).charAt(i) == '0') {
-                    allOnes = false;
-                    break;
-                }
-            }
-
-            if (allOnes) {
-                output[i] = '0';
-            } else {
-                pNodes.add(i);
-            }
+        char[][] outputs = new char[numTasks][numDays];
+        for (int t = 0; t < numTasks; t++) {
+            Arrays.fill(outputs[t], '0');
         }
 
         // --- Graph Construction ---
@@ -37,40 +24,62 @@ public class AlgorithmService {
         Node source = graph.addNode("Source");
         Node sink = graph.addNode("Sink");
 
-        Node[] cNodes = new Node[m];
+        Node[] uNodes = new Node[m];
         for (int j = 0; j < m; j++) {
-            cNodes[j] = graph.addNode("C_" + j);
-            for (int k = 1; k <= pNodes.size(); k++) {
-                graph.addEdge(cNodes[j], sink, 1, 2 * k - 1);
+            uNodes[j] = graph.addNode("U_" + j);
+            for (int k = 1; k <= 35; k++) {
+                graph.addEdge(uNodes[j], sink, 1, 2 * k - 1);
             }
         }
 
-        for (int i : pNodes) {
-            Node nodeP = graph.addNode("P_" + i);
-            graph.addEdge(source, nodeP, 1, 0);
+        Node[][] tNodes = new Node[numDays][numTasks];
+        for (int d = 0; d < numDays; d++) {
+            for (int t = 0; t < numTasks; t++) {
+                boolean allOnes = true;
+                for (int j = 0; j < m; j++) {
+                    if (allTasks.get(t).get(j).charAt(d) == '0') {
+                        allOnes = false;
+                        break;
+                    }
+                }
 
-            for (int j = 0; j < m; j++) {
-                if (strings.get(j).charAt(i) == '0') {
-                    graph.addEdge(nodeP, cNodes[j], 1, 0);
+                if (!allOnes) {
+                    tNodes[d][t] = graph.addNode("T_" + d + "_" + t);
+                    graph.addEdge(source, tNodes[d][t], 1, 0);
+
+                    for (int j = 0; j < m; j++) {
+                        if (allTasks.get(t).get(j).charAt(d) == '0') {
+                            graph.addEdge(tNodes[d][t], uNodes[j], 1, 0);
+                        }
+                    }
                 }
             }
         }
 
-        // --- MCMF Execution ---
-        graph.runMCMF(source, sink, seed);
+        // --- MCMF Execution with Dynamic Penalty ---
+        graph.runMCMFWithPenalty(source, sink, seed);
 
         // --- Result Extraction ---
         for (Edge edge : graph.getAllEdges()) {
-            if (edge.from.name.startsWith("P_") && edge.to.name.startsWith("C_")) {
+            if (edge.from.name.startsWith("T_") && edge.to.name.startsWith("U_")) {
                 if (edge.flow == 1) {
-                    int pos = Integer.parseInt(edge.from.name.substring(2));
+                    String[] parts = edge.from.name.split("_");
+                    int d = Integer.parseInt(parts[1]);
+                    int t = Integer.parseInt(parts[2]);
                     int userIdx = Integer.parseInt(edge.to.name.substring(2));
-                    output[pos] = (char) ('1' + userIdx);
+                    outputs[t][d] = (char) ('1' + userIdx);
                 }
             }
         }
 
-        return new String(output);
+        Map<String, String> results = new HashMap<>();
+        results.put("resMarket", new String(outputs[0]));
+        results.put("resCookNoon", new String(outputs[1]));
+        results.put("resWashNoon", new String(outputs[2]));
+        results.put("resCookNight", new String(outputs[3]));
+        results.put("resWashNight", new String(outputs[4]));
+
+        return results;
     }
 
     // --- Complex Methods ---
@@ -110,6 +119,14 @@ public class AlgorithmService {
             return node;
         }
 
+        Node getNodeByName(String name) {
+            for (Node n : nodes) {
+                if (n.name.equals(name))
+                    return n;
+            }
+            return null;
+        }
+
         void addEdge(Node from, Node to, int capacity, int cost) {
             Edge forward = new Edge(from, to, capacity, cost);
             Edge backward = new Edge(to, from, 0, -cost);
@@ -127,7 +144,7 @@ public class AlgorithmService {
             return allEdges;
         }
 
-        void runMCMF(Node source, Node sink, int seed) {
+        void runMCMFWithPenalty(Node source, Node sink, int seed) {
             Random random = new Random(seed);
             while (true) {
                 Map<Node, Integer> distances = new HashMap<>();
@@ -163,20 +180,48 @@ public class AlgorithmService {
                 if (distances.get(sink) == Integer.MAX_VALUE)
                     break;
 
-                int pushFlow = Integer.MAX_VALUE;
-                Node curr = sink;
-                while (curr != source) {
-                    Edge edge = parents.get(curr);
-                    pushFlow = Math.min(pushFlow, edge.capacity - edge.flow);
-                    curr = edge.from;
-                }
+                int pushFlow = 1;
+                Node taskNode = null;
+                Node userNode = null;
 
-                curr = sink;
+                Node curr = sink;
                 while (curr != source) {
                     Edge edge = parents.get(curr);
                     edge.flow += pushFlow;
                     edge.reverseEdge.flow -= pushFlow;
+
+                    if (edge.from.name.startsWith("T_") && edge.to.name.startsWith("U_")) {
+                        taskNode = edge.from;
+                        userNode = edge.to;
+                    }
+
                     curr = edge.from;
+                }
+
+                if (taskNode != null && userNode != null) {
+                    String[] parts = taskNode.name.split("_");
+                    int d = Integer.parseInt(parts[1]);
+                    int t = Integer.parseInt(parts[2]);
+
+                    Node prevTask = getNodeByName("T_" + d + "_" + (t - 1));
+                    Node nextTask = getNodeByName("T_" + d + "_" + (t + 1));
+
+                    if (prevTask != null) {
+                        for (Edge e : prevTask.edges) {
+                            if (e.to == userNode && e.capacity > 0) {
+                                e.cost += 1000;
+                                e.reverseEdge.cost -= 1000;
+                            }
+                        }
+                    }
+                    if (nextTask != null) {
+                        for (Edge e : nextTask.edges) {
+                            if (e.to == userNode && e.capacity > 0) {
+                                e.cost += 1000;
+                                e.reverseEdge.cost -= 1000;
+                            }
+                        }
+                    }
                 }
             }
         }

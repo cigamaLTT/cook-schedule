@@ -75,16 +75,20 @@ public class AdminController {
         List<UserSchedule> schedules = userScheduleRepository.findAll();
         List<String> userNames = schedules.stream().map(UserSchedule::getUsername).toList();
 
-        String market = algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoMarket).toList(), seed);
-        String cookNoon = algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoCookNoon).toList(), seed);
-        String washNoon = algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoWashNoon).toList(), seed);
-        String cookNight = algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoCookNight).toList(), seed);
-        String washNight = algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoWashNight).toList(), seed);
+        List<List<String>> allTasks = List.of(
+                schedules.stream().map(UserSchedule::getNoMarket).toList(),
+                schedules.stream().map(UserSchedule::getNoCookNoon).toList(),
+                schedules.stream().map(UserSchedule::getNoWashNoon).toList(),
+                schedules.stream().map(UserSchedule::getNoCookNight).toList(),
+                schedules.stream().map(UserSchedule::getNoWashNight).toList());
+
+        Map<String, String> results = algorithmService.generateFullRoster(userNames, allTasks, seed);
+
+        String market = results.get("resMarket");
+        String cookNoon = results.get("resCookNoon");
+        String washNoon = results.get("resWashNoon");
+        String cookNight = results.get("resCookNight");
+        String washNight = results.get("resWashNight");
 
         ApprovedRoster approved = new ApprovedRoster(1, market, cookNoon, washNoon, cookNight, washNight, seed);
         approvedRosterRepository.save(approved);
