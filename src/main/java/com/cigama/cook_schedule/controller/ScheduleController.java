@@ -67,16 +67,20 @@ public class ScheduleController {
         model.addAttribute("seed", seed);
 
         // --- Pending Roster Data ---
-        model.addAttribute("resMarket", algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoMarket).toList(), seed));
-        model.addAttribute("resCookNoon", algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoCookNoon).toList(), seed));
-        model.addAttribute("resWashNoon", algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoWashNoon).toList(), seed));
-        model.addAttribute("resCookNight", algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoCookNight).toList(), seed));
-        model.addAttribute("resWashNight", algorithmService.findOptimalAssignment(userNames,
-                schedules.stream().map(UserSchedule::getNoWashNight).toList(), seed));
+        List<List<String>> allTasks = List.of(
+                schedules.stream().map(UserSchedule::getNoMarket).toList(),
+                schedules.stream().map(UserSchedule::getNoCookNoon).toList(),
+                schedules.stream().map(UserSchedule::getNoWashNoon).toList(),
+                schedules.stream().map(UserSchedule::getNoCookNight).toList(),
+                schedules.stream().map(UserSchedule::getNoWashNight).toList());
+
+        java.util.Map<String, String> results = algorithmService.generateFullRoster(userNames, allTasks, seed);
+
+        model.addAttribute("resMarket", results.get("resMarket"));
+        model.addAttribute("resCookNoon", results.get("resCookNoon"));
+        model.addAttribute("resWashNoon", results.get("resWashNoon"));
+        model.addAttribute("resCookNight", results.get("resCookNight"));
+        model.addAttribute("resWashNight", results.get("resWashNight"));
 
         // --- Approved Roster Data ---
         model.addAttribute("appRoster", approved);
