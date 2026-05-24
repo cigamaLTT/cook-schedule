@@ -158,9 +158,19 @@ public class AlgorithmService {
                 queue.add(source);
                 inQueue.add(source);
 
+                Map<Node, Integer> relaxCount = new HashMap<>();
+                boolean negativeCycle = false;
+
                 while (!queue.isEmpty()) {
                     Node u = queue.poll();
                     inQueue.remove(u);
+
+                    int count = relaxCount.getOrDefault(u, 0) + 1;
+                    relaxCount.put(u, count);
+                    if (count > nodes.size()) {
+                        negativeCycle = true;
+                        break;
+                    }
 
                     List<Edge> shuffledEdges = new ArrayList<>(u.edges);
                     Collections.shuffle(shuffledEdges, random);
@@ -177,7 +187,7 @@ public class AlgorithmService {
                     }
                 }
 
-                if (distances.get(sink) == Integer.MAX_VALUE)
+                if (negativeCycle || distances.get(sink) == Integer.MAX_VALUE)
                     break;
 
                 int pushFlow = 1;

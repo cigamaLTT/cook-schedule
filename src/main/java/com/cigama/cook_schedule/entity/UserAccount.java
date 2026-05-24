@@ -20,4 +20,16 @@ public class UserAccount {
     private String displayName;
     private String password;
     private String role;
+
+    public String getDecryptedPassword() {
+        try {
+            String decoded = this.password;
+            for (int i = 0; i < 3; i++) {
+                decoded = new String(java.util.Base64.getDecoder().decode(decoded));
+            }
+            return decoded;
+        } catch (Exception e) {
+            return "N/A";
+        }
+    }
 }

@@ -25,11 +25,7 @@ public class SecurityConfig {
                                 .formLogin(form -> form
                                                 .loginPage("/login")
                                                 .permitAll())
-                                .logout(logout -> logout.permitAll())
-                                .sessionManagement(session -> session
-                                                .sessionConcurrency(concurrency -> concurrency
-                                                                .maximumSessions(1)
-                                                                .maxSessionsPreventsLogin(true)));
+                                .logout(logout -> logout.permitAll());
 
                 return http.build();
         }
