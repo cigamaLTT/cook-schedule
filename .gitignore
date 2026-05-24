@@ -46,3 +46,4 @@ Thumbs.db
 # Other
 temp/
 /tmp/
+.env
